@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The Alchemist's Sabotage</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="title">
+      <h1>The Alchemist's Sabotage</h1>
+      <div class="sub">Equip the hero. Watch the run. Buy back what's left behind.</div>
+    </div>
+    <div class="ledger">
+      <div class="stat"><div class="v" id="goldVal">80</div><div class="k">Gold</div></div>
+      <div class="stat"><div class="v" id="runVal">1</div><div class="k">Run</div></div>
+      <div class="stat"><div class="v" id="profitVal">0</div><div class="k">Last Profit</div></div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- SHOP PANEL -->
+    <div class="panel">
+      <h2>Apothecary Stock</h2>
+      <div class="desc">Buy gear and potions with shop gold. Drag purchased stock onto the hero to equip and sell.</div>
+      <div class="shop-list" id="shopList"></div>
+
+      <div class="stock">
+        <h3>Your Stock (drag to hero →)</h3>
+        <div id="stockGrid"></div>
+      </div>
+    </div>
+
+    <!-- HERO PANEL -->
+    <div class="panel">
+      <h2>The Hero</h2>
+      <div class="desc">Sir Gullane. Brave, greedy, and utterly unaware of the plan.</div>
+      <div class="hero-card">
+        <div class="hero-portrait">🗡️</div>
+        <div class="hero-name" id="heroName">Sir Gullane</div>
+        <div class="hp-bar-wrap"><div class="hp-bar" id="hpBar" style="width:100%"></div></div>
+        <div class="hero-stats">
+          <div class="s">HP <b id="statHP">100</b></div>
+          <div class="s">Floor <b id="statFloor">0 / 5</b></div>
+          <div class="s">Attack <b id="statATK">10</b></div>
+          <div class="s">Defense <b id="statDEF">5</b></div>
+        </div>
+        <div class="slots">
+          <div class="slot" data-slot="weapon"><span class="slot-label">Weapon</span></div>
+          <div class="slot" data-slot="armor"><span class="slot-label">Armor</span></div>
+          <div class="slot" data-slot="potion1"><span class="slot-label">Potion</span></div>
+          <div class="slot" data-slot="potion2"><span class="slot-label">Potion</span></div>
+        </div>
+        <div class="run-controls">
+          <button class="btn btn-primary" id="runBtn">Send Into Dungeon</button>
+        </div>
+        <div class="run-controls">
+          <button class="btn btn-secondary" id="resetBtn">Reset Hero &amp; Try Again</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DUNGEON / LOG PANEL -->
+    <div class="panel">
+      <h2>Dungeon Run</h2>
+      <div class="desc">Floors 1–4: monsters, materials. Floor 5: the dragon — where the plan is supposed to fall apart.</div>
+      <div class="log-box" id="logBox">
+        <div class="log-line system">Equip your hero, then send them in.</div>
+      </div>
+      <div class="result-box" id="resultBox"></div>
+    </div>
+
+  </div>
+
+  <footer class="note">
+    Drag with mouse or finger. Materials the hero never used stay in the dungeon — and the shop buys them back cheap.<br>
+    Sabotage rule of thumb: the hero should clear floors 1–4, then lose to the dragon on floor 5.
+  </footer>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
