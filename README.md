@@ -4,7 +4,7 @@ A candy match-3 puzzle game with 8 levels, VFX animations, and responsive design
 
 ## 🎮 Play Now
 
-👉 **[Click here to Play](https://smileyengineer6666-netizen.github.io/sugar-rush-clash/)**
+👉 **[Click here to Play](https://smileyengineer6666-netizen.github.io/alchemists-sabotage/)**
 
 ## 📁 Project Structure
 
