@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sugar Rush Clash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -10%, #5c2aad 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 90% 100%, #2a0d5c 0%, transparent 60%),
+      #0d0520;
+    font-family: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+    color: #fff;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── Layout ─────────────────────────────────────────── */
+  #wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 10px 8px 6px;
+    gap: 8px;
+  }
+
+  /* ── Title bar ───────────────────────────────────────── */
+  #game-title {
+    font-size: clamp(14px, 3.5vw, 20px);
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #ff5470, #ffd23f, #c86bff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    margin: 0;
+    line-height: 1;
+  }
+
+  /* ── HUD strip ───────────────────────────────────────── */
+  #hud {
+    width: 100%;
+    max-width: 560px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .hud-card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 7px 6px 8px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.1s ease;
+  }
+  .hud-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .hud-icon {
+    font-size: clamp(13px, 3vw, 18px);
+    line-height: 1;
+    display: block;
+    margin-bottom: 1px;
+  }
+  .hud-label {
+    font-size: clamp(8px, 1.8vw, 10px);
+    font-weight: 600;
+    opacity: 0.55;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .hud-value {
+    font-size: clamp(17px, 4.5vw, 26px);
+    font-weight: 800;
+    line-height: 1;
+    display: block;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    transition: transform 0.12s cubic-bezier(.34,1.56,.64,1), color 0.2s;
+  }
+  .hud-value.pop {
+    animation: scorePopAnim 0.35s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  @keyframes scorePopAnim {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+
+  /* Level card accent */
+  #level-card  { border-color: rgba(124, 255, 94, 0.4); }
+  #level-value { color: #7cff5e; }
+
+  /* Score card accent */
+  #score-card { border-color: rgba(255, 84, 112, 0.4); }
+  #score-value { color: #ff8fab; }
+
+  /* Combo card accent */
+  #combo-card { border-color: rgba(255, 210, 63, 0.4); }
+  #combo-value { color: #ffd23f; }
+  #combo-value.hot { color: #ff8a3f; text-shadow: 0 0 12px #ff8a3f88; }
+
+  /* Target card accent */
+  #target-card { border-color: rgba(63, 208, 255, 0.4); }
+  #target-value { color: #3fd0ff; }
+
+  /* Timer card accent */
+  #timer-card  { border-color: rgba(200, 107, 255, 0.4); }
+  #timer-value { color: #c86bff; }
+  #timer-value.low { color: #ff5470 !important; animation: pulse 0.5s infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.18);} }
+
+  /* ── Stars rating ────────────────────────────────────── */
+  #overlay-stars {
+    display: flex;
+    gap: 8px;
+    font-size: clamp(28px, 8vw, 44px);
+    margin: 4px 0;
+    filter: drop-shadow(0 2px 6px rgba(255,210,63,0.6));
+  }
+
+  /* ── Progress bars ───────────────────────────────────── */
+  #bars {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .bar-label-sm {
+    font-size: clamp(8px, 2vw, 10px);
+    font-weight: 700;
+    opacity: 0.5;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    min-width: 36px;
+    white-space: nowrap;
+  }
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+  #score-bar-fill  { background: linear-gradient(90deg, #ff5470, #ffd23f); }
+  #timer-bar-fill  { background: linear-gradient(90deg, #c86bff, #3fd0ff); }
+  #timer-bar-fill.low { background: linear-gradient(90deg, #ff5470, #ff8a3f); }
+
+  /* ── Canvas ──────────────────────────────────────────── */
+  canvas {
+    border-radius: 16px;
+    box-shadow:
+      0 20px 60px rgba(0,0,0,0.6),
+      0 0 0 2px rgba(255,255,255,0.10) inset,
+      0 0 40px rgba(92,42,173,0.3);
+    touch-action: none;
+    background: #160b30;
+    display: block;
+  }
+
+  /* ── Footer hint ─────────────────────────────────────── */
+  #footer-hint {
+    font-size: clamp(9px, 2vw, 11px);
+    opacity: 0.35;
+    text-align: center;
+    line-height: 1.4;
+    max-width: 480px;
+    padding: 0 8px;
+  }
+
+  /* ── Overlay ─────────────────────────────────────────── */
+  #overlay {
+    position: fixed; inset: 0;
+    background: rgba(8, 3, 18, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10;
+    animation: fadeInOverlay 0.3s ease;
+  }
+  @keyframes fadeInOverlay { from{opacity:0;transform:scale(0.96);} to{opacity:1;transform:scale(1);} }
+
+  #overlay-emoji { font-size: clamp(48px, 12vw, 72px); line-height:1; margin-bottom: 4px; }
+  #overlay h1 {
+    font-size: clamp(26px, 7vw, 42px);
+    font-weight: 900;
+    margin: 0;
+    background: linear-gradient(90deg, #ff5470, #ffd23f);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #overlay-sub {
+    font-size: clamp(13px, 3.5vw, 17px);
+    opacity: 0.75;
+    margin: 0;
+    font-weight: 600;
+    text-align: center;
+    padding: 0 20px;
+  }
+  #overlay-score-big {
+    font-size: clamp(44px, 12vw, 72px);
+    font-weight: 900;
+    line-height: 1;
+    color: #ffd23f;
+    text-shadow: 0 4px 20px rgba(255,210,63,0.5);
+    margin: 6px 0;
+  }
+  #overlay button {
+    background: linear-gradient(135deg, #ff5470 0%, #ffd23f 100%);
+    border: none;
+    color: #1a0a2e;
+    font-family: inherit;
+    font-weight: 900;
+    font-size: clamp(14px, 3.5vw, 18px);
+    padding: clamp(10px, 2.5vw, 14px) clamp(28px, 7vw, 44px);
+    border-radius: 99px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(255,84,112,0.45), 0 0 0 2px rgba(255,255,255,0.15) inset;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+  }
+  #overlay button:hover  { transform: translateY(-2px) scale(1.04); box-shadow: 0 14px 32px rgba(255,84,112,0.55); }
+  #overlay button:active { transform: translateY(0) scale(0.97); }
+
+  /* ── Responsive tweaks ───────────────────────────────── */
+  @media (max-width: 400px) {
+    #wrap { gap: 5px; padding: 6px 5px 4px; }
+    .hud-card { padding: 5px 4px 6px; border-radius: 11px; }
+  }
+  @media (min-width: 700px) {
+    #wrap { gap: 12px; }
+    .hud-card { padding: 10px 8px 11px; border-radius: 16px; }
+    canvas { border-radius: 20px; }
+  }
+
+  /* ── Level-complete / game-over overlay extras ───────── */
+  #overlay-level-badge {
+    font-size: clamp(11px, 3vw, 14px);
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 99px;
+    background: rgba(124, 255, 94, 0.15);
+    border: 1px solid rgba(124, 255, 94, 0.4);
+    color: #7cff5e;
+    margin-bottom: 2px;
+  }
+  #overlay-btn2 {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: clamp(13px, 3vw, 16px);
+    padding: clamp(8px, 2vw, 11px) clamp(20px, 5vw, 32px);
+    border-radius: 99px;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.2s;
+    letter-spacing: 0.5px;
+  }
+  #overlay-btn2:hover  { background: rgba(255,255,255,0.18); transform: translateY(-1px); }
+  #overlay-btn2:active { transform: scale(0.97); }
+  #overlay-btns {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1 id="game-title">🍬 Sugar Rush Clash</h1>
+
+  <div id="hud">
+    <div class="hud-card" id="level-card">
+      <span class="hud-icon">🌟</span>
+      <span class="hud-label">Level</span>
+      <span class="hud-value" id="level-value">1</span>
+    </div>
+    <div class="hud-card" id="score-card">
+      <span class="hud-icon">⭐</span>
+      <span class="hud-label">Score</span>
+      <span class="hud-value" id="score-value">0</span>
+    </div>
+    <div class="hud-card" id="combo-card">
+      <span class="hud-icon">🔥</span>
+      <span class="hud-label">Combo</span>
+      <span class="hud-value" id="combo-value">×1</span>
+    </div>
+    <div class="hud-card" id="timer-card">
+      <span class="hud-icon">⏱</span>
+      <span class="hud-label">Time</span>
+      <span class="hud-value" id="timer-value">90</span>
+    </div>
+  </div>
+
+  <div id="bars">
+    <div class="bar-row">
+      <span class="bar-label-sm">Score</span>
+      <div class="bar-track"><div class="bar-fill" id="score-bar-fill"></div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label-sm">Time</span>
+      <div class="bar-track"><div class="bar-fill" id="timer-bar-fill"></div></div>
+    </div>
+  </div>
+
+  <canvas id="game"></canvas>
+  <div id="footer-hint">Drag or tap two candies to swap · Match 4 = Beam · Match 5 = Color Bomb · L/T = Blast</div>
+</div>
+
+<div id="overlay">
+  <div id="overlay-level-badge">Level 1</div>
+  <div id="overlay-emoji">🍭</div>
+  <h1 id="overlay-title">Sugar Rush!</h1>
+  <div id="overlay-stars">⭐⭐⭐</div>
+  <div id="overlay-score-big">0</div>
+  <p id="overlay-sub">Keep crushing those candies!</p>
+  <div id="overlay-btns">
+    <button id="overlay-btn">Next Level ➡</button>
+    <button id="overlay-btn2">Restart</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------------------
+  // LEVELS CONFIG  (8 levels, gets harder each time)
+  // level: display number
+  // target: score needed to clear the level
+  // time: seconds allowed
+  // colors: how many candy colours are active (fewer = easier combos)
+  // ---------------------------------------------------------------------
+  const LEVELS = [
+    { level: 1, target:  2000, time: 90,  colors: 4, label: 'Sweet Start'      },
+    { level: 2, target:  3500, time: 85,  colors: 4, label: 'Candy Craze'      },
+    { level: 3, target:  5000, time: 80,  colors: 5, label: 'Sugar Surge'      },
+    { level: 4, target:  7000, time: 75,  colors: 5, label: 'Fudge Frenzy'     },
+    { level: 5, target:  9500, time: 70,  colors: 5, label: 'Caramel Chaos'    },
+    { level: 6, target: 12500, time: 65,  colors: 6, label: 'Rainbow Rampage'  },
+    { level: 7, target: 16000, time: 60,  colors: 6, label: 'Jawbreaker Mode'  },
+    { level: 8, target: 20000, time: 55,  colors: 6, label: 'Sugar Rush MAX!'  },
+  ];
+  const ALL_COLORS = ['#ff5470', '#ffd23f', '#3fd0ff', '#7cff5e', '#c86bff', '#ff8a3f'];
+
+  let currentLevelIdx = 0;  // 0-based index into LEVELS
+  let totalScore      = 0;  // cumulative score across all levels
+
+  function getLevelCfg() { return LEVELS[currentLevelIdx]; }
+
+  // Dynamic config accessors (replace old constants)
+  function getActiveColors() { return ALL_COLORS.slice(0, getLevelCfg().colors); }
+  function getLevelTime()    { return getLevelCfg().time; }
+  function getTarget()       { return getLevelCfg().target; }
+
+  const ROWS = 8, COLS = 8;
+  const DRAG_THRESHOLD = 14;
+  const FALL_SETTLE_MS = 280;
+  const CLEAR_FLASH_MS = 180;
+  const MAX_MULTIPLIER = 8;
+
+  let cellSize = 56;
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    // Reserve space for: title (~28px) + hud (~80px) + bars (~32px) + hint (~20px) + gaps (~40px)
+    const reservedH = 200;
+    const sidePad   = 16;
+    const maxW = Math.min(window.innerWidth - sidePad, 560);
+    const maxH = window.innerHeight - reservedH;
+    cellSize = Math.floor(Math.min(maxW / COLS, maxH / ROWS));
+    cellSize = Math.max(28, Math.min(cellSize, 68)); // clamp: min 28px (tiny phone), max 68px (big desktop)
+    canvas.width  = cellSize * COLS;
+    canvas.height = cellSize * ROWS;
+  }
+  window.addEventListener('resize', () => { resizeCanvas(); if (Board.grid.length) Board.init(); });
+  resizeCanvas();
+
+  // ---------------------------------------------------------------------
+  // TILE ENTITY  (logical row/col = authoritative; px/py = animated visual)
+  // ---------------------------------------------------------------------
+  let tileIdCounter = 1;
+  function makeTile(type, row, col, special) {
+    return {
+      id: tileIdCounter++,
+      type, special: special || 'none',
+      row, col,
+      px: col * cellSize, py: row * cellSize,   // current visual position
+      scaleX: 1, scaleY: 1,
+      alpha: 1,
+      clearing: false,
+      landPulse: 0
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // BOARD MANAGER
+  // ---------------------------------------------------------------------
+  const Board = {
+    grid: [],
+
+    init() {
+      const colors = getActiveColors();
+      this.grid = [];
+      for (let r = 0; r < ROWS; r++) {
+        const row = [];
+        for (let c = 0; c < COLS; c++) {
+          let type;
+          do {
+            type = (Math.random() * colors.length) | 0;
+          } while (this._wouldMatchAt(row, r, c, type));
+          row.push(makeTile(type, r, c, 'none'));
+        }
+        this.grid.push(row);
+      }
+    },
+
+    // avoid spawning immediate 3-in-a-rows during initial fill
+    _wouldMatchAt(rowArr, r, c, type) {
+      if (c >= 2 && rowArr[c - 1] && rowArr[c - 2] &&
+          rowArr[c - 1].type === type && rowArr[c - 2].type === type) return true;
+      if (r >= 2 && this.grid[r - 1] && this.grid[r - 2] &&
+          this.grid[r - 1][c] && this.grid[r - 2][c] &&
+          this.grid[r - 1][c].type === type && this.grid[r - 2][c].type === type) return true;
+      return false;
+    },
+
+    at(r, c) {
+      if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
+      return this.grid[r][c];
+    },
+
+    swap(a, b) {
+      const ta = this.grid[a.r][a.c], tb = this.grid[b.r][b.c];
+      this.grid[a.r][a.c] = tb; this.grid[b.r][b.c] = ta;
+      tb.row = a.r; tb.col = a.c;
+      ta.row = b.r; ta.col = b.c;
+    },
+
+    // Clears the given coord set, spawns any resulting special tiles at their
+    // designated cells, all as one synchronous mutation.
+    commitClearAndSpawnSpecials(clearCoords, clusters) {
+      const specialSpawns = new Map(); // "r,c" -> {type, special}
+      clusters.forEach(cl => {
+        if (cl.resultSpecial !== 'none') {
+          specialSpawns.set(`${cl.spawnAt.r},${cl.spawnAt.c}`, { type: cl.color, special: cl.resultSpecial });
+        }
+      });
+
+      clearCoords.forEach(key => {
+        const [r, c] = key.split(',').map(Number);
+        if (specialSpawns.has(key)) {
+          const spec = specialSpawns.get(key);
+          this.grid[r][c] = makeTile(spec.type, r, c, spec.special);
+          this.grid[r][c].landPulse = 1;
+        } else {
+          this.grid[r][c] = null;
+        }
+      });
+    },
+
+    applyGravity() {
+      for (let c = 0; c < COLS; c++) {
+        let writeRow = ROWS - 1;
+        for (let r = ROWS - 1; r >= 0; r--) {
+          const tile = this.grid[r][c];
+          if (tile) {
+            if (writeRow !== r) {
+              this.grid[writeRow][c] = tile;
+              tile.row = writeRow;
+              this.grid[r][c] = null;
+            }
+            writeRow--;
+          }
+        }
+      }
+    },
+
+    refill() {
+      const colors = getActiveColors();
+      for (let c = 0; c < COLS; c++) {
+        let emptyAbove = 0;
+        for (let r = ROWS - 1; r >= 0; r--) {
+          if (!this.grid[r][c]) emptyAbove++;
+        }
+        let spawned = 0;
+        for (let r = 0; r < ROWS; r++) {
+          if (!this.grid[r][c]) {
+            const type = (Math.random() * colors.length) | 0;
+            const tile = makeTile(type, r, c, 'none');
+            tile.py = (r - emptyAbove + spawned) * cellSize;
+            tile.px = c * cellSize;
+            this.grid[r][c] = tile;
+            spawned++;
+          }
+        }
+      }
+    },
+
+    hasAnyMove() {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (c < COLS - 1) {
+            this.swap({ r, c }, { r, c: c + 1 });
+            const found = MatchDetector.find(this.grid).length > 0;
+            this.swap({ r, c }, { r, c: c + 1 });
+            if (found) return true;
+          }
+          if (r < ROWS - 1) {
+            this.swap({ r, c }, { r: r + 1, c });
+            const found = MatchDetector.find(this.grid).length > 0;
+            this.swap({ r, c }, { r: r + 1, c });
+            if (found) return true;
+          }
+        }
+      }
+      return false;
+    }
+  };
+
+  // ---------------------------------------------------------------------
+  // MATCH DETECTOR (pure function over a grid snapshot)
+  // ---------------------------------------------------------------------
+  const MatchDetector = {
+    find(grid, preferredSpawn) {
+      const rows = grid.length, cols = grid[0].length;
+      const runs = [];
+
+      // horizontal runs
+      for (let r = 0; r < rows; r++) {
+        let c = 0;
+        while (c < cols) {
+          const cell = grid[r][c];
+          if (!cell) { c++; continue; }
+          const run = [{ r, c }];
+          let k = c + 1;
+          while (k < cols && grid[r][k] && grid[r][k].type === cell.type) { run.push({ r, c: k }); k++; }
+          if (run.length >= 3) runs.push({ cells: run, orientation: 'h', color: cell.type });
+          c = k;
+        }
+      }
+      // vertical runs
+      for (let c = 0; c < cols; c++) {
+        let r = 0;
+        while (r < rows) {
+          const cell = grid[r][c];
+          if (!cell) { r++; continue; }
+          const run = [{ r, c }];
+          let k = r + 1;
+          while (k < rows && grid[k][c] && grid[k][c].type === cell.type) { run.push({ r: k, c }); k++; }
+          if (run.length >= 3) runs.push({ cells: run, orientation: 'v', color: cell.type });
+          r = k;
+        }
+      }
+      if (runs.length === 0) return [];
+
+      const cellToRuns = new Map();
+      runs.forEach((run, idx) => run.cells.forEach(p => {
+        const key = p.r + ',' + p.c;
+        if (!cellToRuns.has(key)) cellToRuns.set(key, []);
+        cellToRuns.get(key).push(idx);
+      }));
+
+      const visited = new Set();
+      const clusters = [];
+
+      for (let idx = 0; idx < runs.length; idx++) {
+        if (visited.has(idx)) continue;
+        const stack = [idx];
+        const group = new Set();
+        while (stack.length) {
+          const cur = stack.pop();
+          if (group.has(cur)) continue;
+          group.add(cur); visited.add(cur);
+          runs[cur].cells.forEach(p => {
+            cellToRuns.get(p.r + ',' + p.c).forEach(other => { if (!group.has(other)) stack.push(other); });
+          });
+        }
+
+        const cellMap = new Map();
+        const orientations = new Set();
+        group.forEach(rIdx => {
+          orientations.add(runs[rIdx].orientation);
+          runs[rIdx].cells.forEach(p => cellMap.set(p.r + ',' + p.c, p));
+        });
+        const cells = [...cellMap.values()];
+        const color = runs[[...group][0]].color;
+        const isMixed = orientations.size === 2;
+
+        let resultSpecial, orientation, spawnAt;
+        if (isMixed) {
+          resultSpecial = 'blast';
+          spawnAt = this._findIntersection(runs, group) || cells[0];
+        } else {
+          orientation = orientations.has('h') ? 'h' : 'v';
+          if (cells.length >= 5) resultSpecial = 'colorBomb';
+          else if (cells.length === 4) resultSpecial = orientation === 'h' ? 'stripedH' : 'stripedV';
+          else resultSpecial = 'none';
+          spawnAt = (preferredSpawn && cells.some(p => p.r === preferredSpawn.r && p.c === preferredSpawn.c))
+            ? preferredSpawn
+            : cells[(cells.length / 2) | 0];
+        }
+
+        clusters.push({ cells, color, resultSpecial, spawnAt, isMixed });
+      }
+      return clusters;
+    },
+
+    _findIntersection(runs, group) {
+      const seen = new Map();
+      group.forEach(idx => runs[idx].cells.forEach(p => {
+        const key = p.r + ',' + p.c;
+        if (!seen.has(key)) seen.set(key, new Set());
+        seen.get(key).add(runs[idx].orientation);
+      }));
+      for (const [key, set] of seen) {
+        if (set.size === 2) { const [r, c] = key.split(',').map(Number); return { r, c }; }
+      }
+      return undefined;
+    }
+  };
+
+  // ---------------------------------------------------------------------
+  // SPECIAL TILE EXPANSION (striped beams / color bomb / 3x3 blast, including chains)
+  // ---------------------------------------------------------------------
+  function expandSpecialTriggers(grid, clusters) {
+    const clearSet = new Set();
+    clusters.forEach(cl => cl.cells.forEach(p => clearSet.add(p.r + ',' + p.c)));
+
+    // BFS: any tile in the clear set that itself is a special gets fully expanded,
+    // and if that expansion touches ANOTHER special, expand that too.
+    const queue = [...clearSet];
+    const processed = new Set();
+    while (queue.length) {
+      const key = queue.shift();
+      if (processed.has(key)) continue;
+      processed.add(key);
+      const [r, c] = key.split(',').map(Number);
+      const tile = grid[r][c];
+      if (!tile || tile.special === 'none') continue;
+
+      const extra = expandOne(grid, tile);
+      extra.forEach(p => {
+        const k = p.r + ',' + p.c;
+        clearSet.add(k);
+        if (!processed.has(k)) queue.push(k);
+      });
+    }
+    return clearSet;
+  }
+
+  function expandOne(grid, tile) {
+    const out = [];
+    const { row: r, col: c, special } = tile;
+    if (special === 'stripedH') {
+      for (let cc = 0; cc < COLS; cc++) out.push({ r, c: cc });
+    } else if (special === 'stripedV') {
+      for (let rr = 0; rr < ROWS; rr++) out.push({ r: rr, c });
+    } else if (special === 'blast') {
+      for (let rr = r - 1; rr <= r + 1; rr++)
+        for (let cc = c - 1; cc <= c + 1; cc++)
+          if (rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS) out.push({ r: rr, c: cc });
+    } else if (special === 'colorBomb') {
+      const targetColor = tile.type;
+      for (let rr = 0; rr < ROWS; rr++)
+        for (let cc = 0; cc < COLS; cc++) {
+          const t = grid[rr][cc];
+          if (t && t.type === targetColor) out.push({ r: rr, c: cc });
+        }
+    }
+    return out;
+  }
+
+  // ---------------------------------------------------------------------
+  // SCORE MANAGER
+  // ---------------------------------------------------------------------
+  const Score = {
+    score: 0,
+    comboMultiplier: 1,
+    timeLeft: 90,
+    ended: false,
+
+    registerCascade(chainDepth, clusters) {
+      this.comboMultiplier = Math.min(MAX_MULTIPLIER, chainDepth);
+      let tileCount = 0;
+      clusters.forEach(cl => tileCount += cl.cells.length);
+      const base = tileCount * 20;
+      const bonus = clusters.reduce((s, cl) => s + (cl.resultSpecial !== 'none' ? 60 : 0), 0);
+      this.score += Math.round((base + bonus) * this.comboMultiplier);
+      updateHUD();
+      if (chainDepth > 1) VFX.comboPopup(chainDepth);
+      if (chainDepth >= 2) VFX.shake(Math.min(1, 0.25 * chainDepth));
+      // Check level target hit mid-cascade
+      if (!this.ended && this.score >= getTarget()) {
+        this.ended = true;
+        setTimeout(advanceLevel, 400); // small delay so final cascade resolves
+      }
+    },
+
+    resetChain() { this.comboMultiplier = 1; updateHUD(); },
+
+    tick(dt) {
+      if (this.ended) return;
+      this.timeLeft -= dt;
+      if (this.timeLeft <= 0) {
+        this.timeLeft = 0;
+        this.ended = true;
+        endGame('timeout');
+      }
+      updateHUD();
+    }
+  };
+
+  // Animated score counter
+  let _displayScore = 0;
+  let _scoreAnimFrame = null;
+  function animateScoreTo(target) {
+    if (_scoreAnimFrame) cancelAnimationFrame(_scoreAnimFrame);
+    const start = _displayScore;
+    const diff  = target - start;
+    const dur   = Math.min(600, Math.max(200, Math.abs(diff) * 0.8));
+    const t0    = performance.now();
+    const scoreEl = document.getElementById('score-value');
+    function tick(now) {
+      const progress = Math.min(1, (now - t0) / dur);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      _displayScore = Math.round(start + diff * ease);
+      scoreEl.textContent = _displayScore.toLocaleString();
+      if (progress < 0.05) {
+        scoreEl.classList.remove('pop');
+        void scoreEl.offsetWidth;
+        scoreEl.classList.add('pop');
+      }
+      if (progress < 1) _scoreAnimFrame = requestAnimationFrame(tick);
+      else { _displayScore = target; scoreEl.textContent = target.toLocaleString(); }
+      // score progress bar toward this level's target
+      const pct = Math.min(100, (target / getTarget()) * 100);
+      document.getElementById('score-bar-fill').style.width = pct + '%';
+    }
+    _scoreAnimFrame = requestAnimationFrame(tick);
+  }
+
+  function updateHUD() {
+    // Level badge
+    document.getElementById('level-value').textContent = getLevelCfg().level;
+
+    // Score — animated
+    if (Score.score !== _displayScore) animateScoreTo(Score.score);
+
+    // Combo
+    const comboEl = document.getElementById('combo-value');
+    const newCombo = '×' + Score.comboMultiplier;
+    if (comboEl.textContent !== newCombo) {
+      comboEl.textContent = newCombo;
+      comboEl.classList.remove('pop');
+      void comboEl.offsetWidth;
+      comboEl.classList.add('pop');
+    }
+    comboEl.classList.toggle('hot', Score.comboMultiplier >= 3);
+
+    // Timer
+    const t   = Math.ceil(Score.timeLeft);
+    const tEl = document.getElementById('timer-value');
+    tEl.textContent = t;
+    tEl.classList.toggle('low', t <= 15);
+
+    // Timer bar
+    const timerFill = document.getElementById('timer-bar-fill');
+    const timePct   = Math.max(0, (Score.timeLeft / getLevelTime()) * 100);
+    timerFill.style.width = timePct + '%';
+    timerFill.classList.toggle('low', t <= 15);
+  }
+
+  let _gameEnded = false; // guard against double endGame calls
+
+  // Called when target reached → advance to next level
+  function advanceLevel() {
+    if (_gameEnded) return;
+    _gameEnded = true;
+    totalScore += Score.score;
+
+    const cfg    = getLevelCfg();
+    const isLast = currentLevelIdx >= LEVELS.length - 1;
+
+    // Star rating: 3 = fast (>50% time left), 2 = ok, 1 = just made it
+    const timePct = Score.timeLeft / cfg.time;
+    const stars   = timePct > 0.5 ? '⭐⭐⭐' : timePct > 0.2 ? '⭐⭐' : '⭐';
+
+    document.getElementById('overlay-level-badge').textContent = `Level ${cfg.level} — ${cfg.label}`;
+    document.getElementById('overlay-emoji').textContent        = isLast ? '🏆' : '🎉';
+    document.getElementById('overlay-title').textContent        = isLast ? 'You Beat The Game!' : 'Level Complete!';
+    document.getElementById('overlay-stars').textContent        = stars;
+    document.getElementById('overlay-score-big').textContent    = Score.score.toLocaleString();
+    document.getElementById('overlay-sub').textContent          =
+      isLast
+        ? `Total score: ${totalScore.toLocaleString()} — Amazing champion! 🍭`
+        : `+${Score.score.toLocaleString()} pts  ·  Total: ${totalScore.toLocaleString()}`;
+
+    const nextBtn = document.getElementById('overlay-btn');
+    nextBtn.textContent = isLast ? '🔁 Play Again' : `Next Level ➡`;
+    nextBtn.dataset.mode = isLast ? 'restart' : 'next';
+
+    document.getElementById('overlay').style.display = 'flex';
+  }
+
+  // Called when time runs out
+  function endGame(reason) {
+    if (_gameEnded) return;
+    _gameEnded = true;
+    const cfg = getLevelCfg();
+    document.getElementById('overlay-level-badge').textContent = `Level ${cfg.level} — ${cfg.label}`;
+    document.getElementById('overlay-emoji').textContent        = '⏰';
+    document.getElementById('overlay-title').textContent        = "Time's Up!";
+    document.getElementById('overlay-stars').textContent        = '';
+    document.getElementById('overlay-score-big').textContent    = Score.score.toLocaleString();
+    document.getElementById('overlay-sub').textContent          =
+      `Need ${(getTarget() - Score.score).toLocaleString()} more pts — try again!`;
+    const nextBtn = document.getElementById('overlay-btn');
+    nextBtn.textContent  = '🔁 Retry Level';
+    nextBtn.dataset.mode = 'retry';
+    document.getElementById('overlay').style.display = 'flex';
+  }
+
+  function startLevel(idx) {
+    currentLevelIdx = idx;
+    const cfg = getLevelCfg();
+    Score.score = 0; Score.comboMultiplier = 1;
+    Score.timeLeft = cfg.time; Score.ended = false;
+    _displayScore  = 0;
+    _gameEnded     = false;
+    document.getElementById('score-bar-fill').style.width = '0%';
+    document.getElementById('timer-bar-fill').style.width = '100%';
+    reshuffle();
+    state = 'IDLE';
+    updateHUD();
+  }
+
+  // Next-level button
+  document.getElementById('overlay-btn').addEventListener('click', () => {
+    document.getElementById('overlay').style.display = 'none';
+    const mode = document.getElementById('overlay-btn').dataset.mode;
+    if (mode === 'next') {
+      startLevel(currentLevelIdx + 1);
+    } else {
+      // restart or retry
+      totalScore = 0;
+      startLevel(0);
+    }
+  });
+
+  // Restart button (always goes to level 1)
+  document.getElementById('overlay-btn2').addEventListener('click', () => {
+    document.getElementById('overlay').style.display = 'none';
+    totalScore = 0;
+    startLevel(0);
+  });
+
+  // ---------------------------------------------------------------------
+  // VFX SERVICE (particles, shake, popups) — purely additive, never touches logic
+  // ---------------------------------------------------------------------
+  const VFX = {
+    particles: [],
+    trauma: 0,
+    popups: [],
+
+    burst(px, py, color, count) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1.5 + Math.random() * 3;
+        this.particles.push({
+          x: px, y: py,
+          vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 1,
+          life: 1, color, size: 2 + Math.random() * 3
+        });
+      }
+    },
+
+    shake(amount) { this.trauma = Math.min(1, this.trauma + amount); },
+
+    comboPopup(depth) {
+      const labels = { 2: 'Sweet!', 3: 'Great!', 4: 'Awesome!', 5: 'Sugar Rush!!' };
+      const text = labels[depth] || (depth + 'x Cascade!!');
+      this.popups.push({ text, x: canvas.width / 2, y: canvas.height / 2, life: 1, depth });
+    },
+
+    update(dt) {
+      this.particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= dt * 1.6; });
+      this.particles = this.particles.filter(p => p.life > 0);
+      this.trauma = Math.max(0, this.trauma - dt * 1.8);
+      this.popups.forEach(p => { p.y -= 30 * dt; p.life -= dt * 0.9; });
+      this.popups = this.popups.filter(p => p.life > 0);
+    },
+
+    shakeOffset() {
+      const t = this.trauma * this.trauma;
+      return { x: (Math.random() * 2 - 1) * 10 * t, y: (Math.random() * 2 - 1) * 10 * t };
+    },
+
+    render(ctx) {
+      this.particles.forEach(p => {
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      this.popups.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.font = `800 ${18 + p.depth * 3}px Segoe UI, sans-serif`;
+        ctx.fillStyle = '#ffd23f';
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 4;
+        ctx.textAlign = 'center';
+        ctx.strokeText(p.text, p.x, p.y);
+        ctx.fillText(p.text, p.x, p.y);
+        ctx.restore();
+      });
+    }
+  };
+
+  // ---------------------------------------------------------------------
+  // INPUT CONTROLLER (mouse + touch, drag-direction + click-adjacent fallback)
+  // ---------------------------------------------------------------------
+  let state = 'IDLE'; // IDLE | SWAPPING | RESOLVING  — declared here so startLevel() can set it
+  let selected = null;      // {r,c}
+  let dragStart = null;     // {x,y}
+  let dragLocked = false;
+
+  function cellFromPointer(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left, y = clientY - rect.top;
+    const c = Math.floor(x / cellSize), r = Math.floor(y / cellSize);
+    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
+    return { r, c };
+  }
+
+  function isAdjacent(a, b) {
+    const dr = Math.abs(a.r - b.r), dc = Math.abs(a.c - b.c);
+    return (dr + dc) === 1;
+  }
+
+  function tryQueueSwap(a, b) {
+    if (state !== 'IDLE') return;
+    if (!isAdjacent(a, b)) return;
+    performSwap(a, b);
+  }
+
+  function pointerDown(clientX, clientY) {
+    if (state !== 'IDLE') return;
+    const cell = cellFromPointer(clientX, clientY);
+    if (!cell) return;
+    if (selected && isAdjacent(selected, cell)) {
+      tryQueueSwap(selected, cell);
+      selected = null; dragStart = null; dragLocked = false;
+      return;
+    }
+    selected = cell;
+    dragStart = { x: clientX, y: clientY };
+    dragLocked = false;
+  }
+
+  function pointerMove(clientX, clientY) {
+    if (!selected || !dragStart || dragLocked) return;
+    const dx = clientX - dragStart.x, dy = clientY - dragStart.y;
+    if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    let dir;
+    if (Math.abs(dx) > Math.abs(dy)) dir = dx > 0 ? { r: 0, c: 1 } : { r: 0, c: -1 };
+    else dir = dy > 0 ? { r: 1, c: 0 } : { r: -1, c: 0 };
+    const target = { r: selected.r + dir.r, c: selected.c + dir.c };
+    dragLocked = true;
+    tryQueueSwap(selected, target);
+    selected = null; dragStart = null;
+  }
+
+  function pointerUp() {
+    dragStart = null; dragLocked = false;
+    // keep `selected` for click-adjacent fallback
+  }
+
+  canvas.addEventListener('mousedown', e => pointerDown(e.clientX, e.clientY));
+  canvas.addEventListener('mousemove', e => pointerMove(e.clientX, e.clientY));
+  window.addEventListener('mouseup', pointerUp);
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    pointerDown(t.clientX, t.clientY);
+  }, { passive: false });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    pointerMove(t.clientX, t.clientY);
+  }, { passive: false });
+  canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    pointerUp();
+  }, { passive: false });
+
+  // ---------------------------------------------------------------------
+  // SWAP + CASCADE FLOW
+  // ---------------------------------------------------------------------
+  // pendingSwapBack removed — invalid swaps are reverted directly via Board.swap() + setTimeout
+
+  function performSwap(a, b) {
+    state = 'SWAPPING';
+    Board.swap(a, b);
+    // brief window lets the two tiles visually animate toward their new cells
+    // (px/py lag behind row/col automatically — see render loop) before we validate.
+    setTimeout(() => validateSwap(a, b), 140);
+  }
+
+  function validateSwap(a, b) {
+    const clusters = MatchDetector.find(Board.grid, Board.at(b.r, b.c) ? b : a);
+    if (clusters.length === 0) {
+      // no match: swap back
+      Board.swap(a, b);
+      setTimeout(() => { state = 'IDLE'; }, 140);
+      return;
+    }
+    // BUG FIX #3: resetChain() moved to AFTER the cascade resolves (inside runCascade)
+    // so the multiplier properly builds up across the full cascade chain.
+    runCascade(b);
+  }
+
+  function runCascade(originHint) {
+    state = 'RESOLVING';
+    let chainDepth = 0;
+    let spawnHint = originHint;
+    Score.resetChain(); // BUG FIX #3: reset once at cascade START so chain builds from 1
+
+    function step() {
+      const clusters = MatchDetector.find(Board.grid, spawnHint);
+      if (clusters.length === 0) {
+        state = 'IDLE';
+        if (!Board.hasAnyMove()) reshuffle();
+        return;
+      }
+      chainDepth++;
+      spawnHint = undefined;
+
+      // VFX burst per cleared cell before removal
+      clusters.forEach(cl => cl.cells.forEach(p => {
+        const tile = Board.at(p.r, p.c);
+        if (tile) VFX.burst(tile.px + cellSize / 2, tile.py + cellSize / 2, ALL_COLORS[tile.type], 8);
+      }));
+
+      const clearSet = expandSpecialTriggers(Board.grid, clusters);
+      Score.registerCascade(chainDepth, clusters);
+      Board.commitClearAndSpawnSpecials(clearSet, clusters);
+
+      setTimeout(() => {
+        Board.applyGravity();
+        Board.refill();
+        setTimeout(step, FALL_SETTLE_MS);
+      }, CLEAR_FLASH_MS);
+    }
+    step();
+  }
+
+  function reshuffle() {
+    Board.init();
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const tile = Board.grid[r][c];
+        if (tile) {
+          tile.py = -(ROWS - r) * cellSize;
+          tile.px = c * cellSize;
+        }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // RENDER LOOP
+  // ---------------------------------------------------------------------
+  const LERP_SPEED = 0.28;
+
+  function drawRoundedRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawTile(tile) {
+    const targetX = tile.col * cellSize, targetY = tile.row * cellSize;
+
+    // BUG FIX #2: check distance BEFORE lerp so landPulse is set while tile is still far away
+    const preLerpDist = Math.abs(targetY - tile.py);
+    if (preLerpDist > cellSize * 0.6) tile.landPulse = Math.max(tile.landPulse, 0.6);
+
+    tile.px += (targetX - tile.px) * LERP_SPEED;
+    tile.py += (targetY - tile.py) * LERP_SPEED;
+
+    // squash/stretch on landing
+    const dist = Math.abs(targetY - tile.py);
+    if (dist < 1 && tile.landPulse > 0) {
+      tile.scaleX = 1 + tile.landPulse * 0.22;
+      tile.scaleY = 1 - tile.landPulse * 0.18;
+      tile.landPulse -= 0.12;
+    } else {
+      tile.scaleX += (1 - tile.scaleX) * 0.25;
+      tile.scaleY += (1 - tile.scaleY) * 0.25;
+    }
+
+    const pad = 4;
+    const cx = tile.px + cellSize / 2, cy = tile.py + cellSize / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(tile.scaleX, tile.scaleY);
+    ctx.translate(-cx, -cy);
+
+    const color = ALL_COLORS[tile.type];
+    drawRoundedRect(tile.px + pad, tile.py + pad, cellSize - pad * 2, cellSize - pad * 2, 10);
+    const grad = ctx.createLinearGradient(tile.px, tile.py, tile.px, tile.py + cellSize);
+    grad.addColorStop(0, shade(color, 25));
+    grad.addColorStop(1, shade(color, -15));
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.stroke();
+
+    // special decorations
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    if (tile.special === 'stripedH') {
+      ctx.fillRect(tile.px + pad + 4, cy - 4, cellSize - pad * 2 - 8, 8);
+    } else if (tile.special === 'stripedV') {
+      ctx.fillRect(cx - 4, tile.py + pad + 4, 8, cellSize - pad * 2 - 8);
+    } else if (tile.special === 'colorBomb') {
+      ctx.beginPath();
+      ctx.arc(cx, cy, cellSize * 0.24, 0, Math.PI * 2);
+      const g2 = ctx.createRadialGradient(cx, cy, 2, cx, cy, cellSize * 0.24);
+      g2.addColorStop(0, '#ffffff'); g2.addColorStop(1, 'rgba(255,255,255,0.2)');
+      ctx.fillStyle = g2;
+      ctx.fill();
+    } else if (tile.special === 'blast') {
+      ctx.save();
+      ctx.translate(cx, cy); ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-cellSize * 0.18, -cellSize * 0.18, cellSize * 0.36, cellSize * 0.36);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function shade(hex, percent) {
+    const num = parseInt(hex.slice(1), 16);
+    let r = (num >> 16) + percent, g = ((num >> 8) & 0xff) + percent, b = (num & 0xff) + percent;
+    r = Math.max(0, Math.min(255, r)); g = Math.max(0, Math.min(255, g)); b = Math.max(0, Math.min(255, b));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function drawSelection() {
+    if (!selected) return;
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    drawRoundedRect(selected.c * cellSize + 2, selected.r * cellSize + 2, cellSize - 4, cellSize - 4, 10);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  let lastTime = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+
+    if (!Score.ended) Score.tick(dt);
+    VFX.update(dt);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const shakeOff = VFX.shakeOffset();
+    ctx.save();
+    ctx.translate(shakeOff.x, shakeOff.y);
+
+    // board background grid
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        ctx.fillStyle = (r + c) % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)';
+        ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+      }
+    }
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const tile = Board.at(r, c);
+        if (tile) drawTile(tile);
+      }
+    }
+
+    drawSelection();
+    VFX.render(ctx);
+    ctx.restore();
+
+    requestAnimationFrame(loop);
+  }
+
+  // ---------------------------------------------------------------------
+  // BOOT
+  // ---------------------------------------------------------------------
+  totalScore = 0;
+  startLevel(0);   // begin at level 1
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
